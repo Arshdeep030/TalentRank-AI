@@ -1,0 +1,95 @@
+role_name: Senior AI Engineer
+seniority: senior
+target_experience_years:
+  min: 5
+  ideal_min: 6
+  ideal_max: 8
+  max: 9
+must_have:
+  - python
+  - retrieval
+  - ranking
+  - search
+  - recommendation systems
+  - embeddings
+  - evaluation
+  - production ml
+nice_to_have:
+  - vector databases
+  - llm fine-tuning
+  - learning to rank
+  - open source
+  - hr tech
+  - distributed systems
+negative_signals:
+  - consulting_only
+  - inactive
+  - pure_research
+  - cv_only
+  - speech_only
+  - robotics_only
+  - framework_only_llm
+preferred_locations:
+  - Noida
+  - Pune
+  - Delhi NCR
+  - Mumbai
+  - Hyderabad
+location_rules:
+  country_preference: India
+  relocation_required_if_outside_preferred_hubs: true
+work_mode:
+  preferred:
+    - hybrid
+    - flexible
+hard_filters:
+  stale_activity_days: 180
+  max_honeypot_penalty_for_top_candidates: 30
+consulting_companies:
+  - TCS
+  - Infosys
+  - Wipro
+  - Accenture
+  - Cognizant
+  - Capgemini
+positive_keywords:
+  - retrieval
+  - ranking
+  - relevance
+  - recommendation
+  - search
+  - embeddings
+  - vector search
+  - information retrieval
+  - semantic search
+  - hybrid search
+  - ndcg
+  - mrr
+  - map
+  - ab testing
+  - fine-tuning
+  - lora
+  - qlora
+  - peft
+  - faiss
+  - milvus
+  - qdrant
+  - weaviate
+  - pinecone
+  - elasticsearch
+  - opensearch
+  - xgboost
+  - learning to rank
+title_positives:
+  - AI Engineer
+  - ML Engineer
+  - Machine Learning Engineer
+  - Data Scientist
+  - Search Engineer
+  - Relevance Engineer
+  - Recommendation Engineer
+  - Software Engineer
+  - Backend Engineer
+  - Full Stack Developer
+  - DevOps Engineer
+  - Cloud Engineer

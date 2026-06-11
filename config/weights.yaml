@@ -1,0 +1,22 @@
+retrieval:
+  shortlist_size: 5000
+scoring:
+  fit_weight: 0.50
+  availability_weight: 0.20
+  trust_weight: 0.20
+  growth_weight: 0.10
+availability:
+  stale_days: 180
+  ideal_notice_days: 30
+  acceptable_notice_days: 60
+trust:
+  suspicious_skill_count: 8
+  suspicious_expert_duration_max_months: 12
+  bad_salary_penalty: 15
+  inconsistent_title_penalty: 12
+  consulting_only_penalty: 10
+growth:
+  title_progression_bonus: 12
+  leadership_bonus: 8
+reasoning:
+  max_sentences: 2
