@@ -2,9 +2,9 @@ retrieval:
   shortlist_size: 5000
 scoring:
   fit_weight: 0.50
-  availability_weight: 0.20
+  availability_weight: 0.25
   trust_weight: 0.20
-  growth_weight: 0.10
+  growth_weight: 0.05
 availability:
   stale_days: 180
   ideal_notice_days: 30

@@ -29,15 +29,11 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def run_pipeline(args: argparse.Namespace) -> list[dict[str, object]]:
-    weights = yaml.safe_load(Path(args.weights).read_text(encoding="utf-8"))
-    scorecard = load_job_scorecard(args.job_description, args.scorecard)
-    candidates = [normalize_candidate(record) for record in iter_jsonl(args.candidates)]
+def build_ranked_candidates(candidates: list, scorecard, weights: dict) -> list[tuple[object, object]]:
     retrieved = retrieve_top_candidates(candidates, scorecard, int(weights["retrieval"]["shortlist_size"]))
-
     ranked = []
     for candidate, retrieval_score in retrieved:
-        fit_score, fit_strengths = score_fit(candidate, scorecard)
+        fit_score, fit_strengths, fit_penalties, fit_details = score_fit(candidate, scorecard)
         availability_score, availability_strengths = score_availability(
             candidate,
             stale_days=int(weights["availability"]["stale_days"]),
@@ -56,8 +52,9 @@ def run_pipeline(args: argparse.Namespace) -> list[dict[str, object]]:
             availability_score=availability_score,
             trust_score=trust_score,
             growth_score=growth_score,
+            fit_details=fit_details,
             weights=weights,
-            penalties=trust_penalties + extra_reasons,
+            penalties=fit_penalties + trust_penalties + extra_reasons,
             strengths=fit_strengths + availability_strengths + growth_strengths,
         )
         ranked.append((candidate, score_bundle))
@@ -70,8 +67,11 @@ def run_pipeline(args: argparse.Namespace) -> list[dict[str, object]]:
             item[0].candidate_id,
         )
     )
+    return ranked
 
-    top_ranked = ranked[:100]
+
+def ranked_candidates_to_rows(ranked: list[tuple[object, object]], limit: int = 100) -> list[dict[str, object]]:
+    top_ranked = ranked[:limit]
     top_ranked.sort(
         key=lambda item: (
             -round(item[1].final_score / 100, 4),
@@ -90,6 +90,19 @@ def run_pipeline(args: argparse.Namespace) -> list[dict[str, object]]:
             }
         )
     return rows
+
+
+def load_candidates_and_scorecard(args: argparse.Namespace) -> tuple[list, object, dict]:
+    weights = yaml.safe_load(Path(args.weights).read_text(encoding="utf-8"))
+    scorecard = load_job_scorecard(args.job_description, args.scorecard)
+    candidates = [normalize_candidate(record) for record in iter_jsonl(args.candidates)]
+    return candidates, scorecard, weights
+
+
+def run_pipeline(args: argparse.Namespace) -> list[dict[str, object]]:
+    candidates, scorecard, weights = load_candidates_and_scorecard(args)
+    ranked = build_ranked_candidates(candidates, scorecard, weights)
+    return ranked_candidates_to_rows(ranked, limit=100)
 
 
 def write_submission(rows: list[dict[str, object]], output_path: str | Path) -> None:

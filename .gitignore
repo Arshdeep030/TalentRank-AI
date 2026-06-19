@@ -3,3 +3,7 @@ __pycache__/
 .pytest_cache/
 .venv/
 outputs/
+# Datasets and large files
+*.jsonl
+\[PUB\]\ India_runs_data_and_ai_challenge/
+~$*

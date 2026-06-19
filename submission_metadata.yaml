@@ -1,0 +1,52 @@
+# Fill this before final submission. Values here should match the portal form.
+
+team_name: "TalentRank AI"
+
+primary_contact:
+  name: "Arshdeep"
+  email: "your-email@example.com"
+  phone: "+91-XXXXXXXXXX"
+
+team_members:
+  - name: "Arshdeep"
+    email: "your-email@example.com"
+    role: "ML Engineer"
+
+github_repo: "https://github.com/Arshdeep030/TalentRank-AI"
+sandbox_link: "https://huggingface.co/spaces/YOUR_USERNAME/redrob-ranker"
+reproduce_command: "python3 rank.py --candidates ./dataset/candidates.jsonl --job-description ./dataset/job_description.docx --output ./outputs/submission.csv"
+
+compute:
+  platform: "MacBook Pro"
+  cpu_cores: 8
+  ram_gb: 16
+  python_version: "3.x"
+  os: "macOS"
+  uses_gpu_for_inference: false
+  has_network_during_ranking: false
+  pre_computation_required: false
+  pre_computation_time_minutes: 0
+
+ai_tools_used:
+  - "ChatGPT"
+
+ai_usage_summary: |
+  Used AI assistance for architecture discussion, code review, and implementation support.
+  The ranking pipeline, feature engineering, evaluation workflow, and local validation
+  were implemented and tested in this repository.
+
+methodology_summary: |
+  Recruiter-aware candidate ranking system for the Redrob Senior AI Engineer JD.
+  The pipeline uses structured JD requirements, lexical shortlist retrieval, and a
+  weighted scoring model across fit, availability, trust, and growth. Fit emphasizes
+  real career-history evidence for retrieval, ranking, recommendation, embeddings,
+  vector infra, and evaluation work. Additional defenses penalize AI keyword inflation,
+  consulting-only histories, suspicious profile signals, and likely honeypots.
+  The ranking step runs locally on CPU and produces factual reasoning for the top 100.
+
+declarations:
+  read_submission_spec: true
+  code_is_original_work: true
+  no_collusion: true
+  honeypot_check_done: false
+  reproduction_tested: true

@@ -9,7 +9,11 @@ def generate_reasoning(candidate: CandidateProfile, scores: CandidateScores) -> 
     lines: list[str] = []
 
     if positives:
-        lines.append("; ".join(positives).capitalize() + ".")
+        lines.append(
+            f"Currently {candidate.current_title} with {candidate.years_experience:.1f} years experience; "
+            + "; ".join(positives[:2])
+            + "."
+        )
     else:
         lines.append(f"{candidate.years_experience:.1f} years of experience with partial alignment to the role.")
 
