@@ -273,9 +273,12 @@ def score_fit(candidate: CandidateProfile, scorecard: JobScorecard) -> tuple[flo
 
     score = min(98.0, max(0.0, score))
 
+    has_ranking_evidence = bool(re.search(CAREER_RELEVANCE_PATTERNS["ranking"], career_text))
+
     return score, strengths, penalties, {
         "career_depth_score": career_depth_score,
         "fit_category": fit_category,
         "evaluation_score": evaluation_score,
         "research_penalty": research_penalty,
+        "has_ranking_evidence": has_ranking_evidence,
     }

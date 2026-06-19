@@ -14,6 +14,7 @@ def blend_scores(
     weights: dict,
     penalties: list[str],
     strengths: list[str],
+    main_concern: str = "",
 ) -> CandidateScores:
     scoring = weights["scoring"]
     final_score = (
@@ -34,4 +35,5 @@ def blend_scores(
         final_score=final_score,
         penalties=penalties,
         strengths=strengths,
+        main_concern=main_concern,
     )

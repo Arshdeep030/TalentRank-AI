@@ -55,5 +55,6 @@ class CandidateScores:
     final_score: float
     career_depth_score: float = 0.0
     fit_category: str = ""
+    main_concern: str = ""
     penalties: list[str] = field(default_factory=list)
     strengths: list[str] = field(default_factory=list)

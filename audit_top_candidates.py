@@ -41,16 +41,14 @@ def main() -> None:
             {
                 "rank": rank,
                 "candidate_id": candidate.candidate_id,
-                "current_title": candidate.current_title,
-                "current_company": candidate.current_company,
-                "years_experience": f"{candidate.years_experience:.1f}",
-                "fit_category": scores.fit_category,
                 "fit_score": f"{scores.fit_score:.2f}",
                 "availability_score": f"{scores.availability_score:.2f}",
                 "trust_score": f"{scores.trust_score:.2f}",
                 "growth_score": f"{scores.growth_score:.2f}",
                 "career_depth_score": f"{scores.career_depth_score:.2f}",
                 "final_score": f"{scores.final_score:.4f}",
+                "fit_category": scores.fit_category,
+                "main_concern": scores.main_concern,
                 "reasoning": generate_reasoning(candidate, scores),
             }
         )

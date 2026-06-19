@@ -10,7 +10,7 @@ from src.candidate_normalizer import normalize_candidate
 from src.honeypot_rules import honeypot_penalties
 from src.io_utils import iter_jsonl
 from src.jd_parser import load_job_scorecard
-from src.reasoning import generate_reasoning
+from src.reasoning import determine_main_concern, generate_reasoning
 from src.retrieval import retrieve_top_candidates
 from src.scorer_availability import score_availability
 from src.scorer_final import blend_scores
@@ -45,6 +45,9 @@ def build_ranked_candidates(candidates: list, scorecard, weights: dict) -> list[
         extra_penalty, extra_reasons = honeypot_penalties(candidate)
         trust_score = max(0.0, trust_score - extra_penalty)
 
+        all_penalties = fit_penalties + trust_penalties + extra_reasons
+        main_concern = determine_main_concern(candidate, all_penalties, fit_details)
+
         score_bundle = blend_scores(
             candidate_id=candidate.candidate_id,
             retrieval_score=retrieval_score,
@@ -54,8 +57,9 @@ def build_ranked_candidates(candidates: list, scorecard, weights: dict) -> list[
             growth_score=growth_score,
             fit_details=fit_details,
             weights=weights,
-            penalties=fit_penalties + trust_penalties + extra_reasons,
+            penalties=all_penalties,
             strengths=fit_strengths + availability_strengths + growth_strengths,
+            main_concern=main_concern,
         )
         ranked.append((candidate, score_bundle))
 
