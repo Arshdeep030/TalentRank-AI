@@ -10,6 +10,20 @@ Unlike conventional keyword-matching tools that are easily fooled by resume infl
 
 ---
 
+## 🎯 The Problem & Dataset Challenges
+
+### The Problem: Beyond Keyword Matching
+In high-volume recruitment (evaluating 100,000+ candidates), simple keyword matching is highly vulnerable to resume inflation, spam, and semantic mismatch. The Redrob Intelligent Candidate Discovery challenge requires ranking candidates against a senior AI/search engineering description where standard filters fail.
+
+### Dataset Challenges & Recruiter Intelligence
+IntentRank addresses several key dataset constraints designed to trick generic algorithms:
+
+1. **Deceptive Honeypots:** The dataset contains non-technical profiles (e.g. Sales, Marketing) stuffed with advanced ML keywords (like `PEFT`, `LoRA`, `Milvus`, `Information Retrieval`). IntentRank neutralizes this via a **Title-Skill Mismatch** trust check that penalizes non-technical roles claiming technical expertises.
+2. **Noisy Aggregate Fields:** Standard aggregate fields are often highly inaccurate. For instance, candidate **`CAND_0019480`** has a flat declared `years_of_experience` field of **2.8 years**, yet their detailed career history shows 4 distinct roles summing to **7.25 years** of senior-level ML experience. IntentRank overcomes this by dynamically reconstructing experience and career depth directly from employment history records instead of trusting flat fields.
+3. **Availability Realities:** The job description specifies that *"A perfect candidate who hasn't logged in for 6 months is not actually available."* IntentRank computes active seekers via login activity recency, notice periods, and recruiter response rates.
+
+---
+
 ## 🏗️ System Architecture
 
 IntentRank is structured as a decoupled, CPU-friendly pipeline designed to run efficiently on 100K+ candidate profiles within runtime constraints:
