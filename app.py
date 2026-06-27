@@ -28,10 +28,16 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main-header {
-        font-size: 2.5rem;
-        font-weight: 700;
+        font-size: 2.8rem;
+        font-weight: 800;
         color: #1E1E2E;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.1rem;
+    }
+    .main-subheader {
+        font-size: 1.2rem;
+        font-weight: 500;
+        color: #89B4FA;
+        margin-bottom: 1.5rem;
     }
     .sub-header {
         font-size: 1.1rem;
@@ -59,6 +65,14 @@ st.markdown("""
         border-radius: 0.3rem;
         font-weight: 600;
         font-size: 0.85rem;
+    }
+    .footer {
+        font-size: 0.85rem;
+        color: #A6ADC8;
+        text-align: center;
+        margin-top: 4rem;
+        padding-top: 1rem;
+        border-top: 1px solid #E6E9EF;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -92,10 +106,26 @@ with st.sidebar:
             "growth": {"title_progression_bonus": 12, "leadership_bonus": 8}
         }
         
-    fit_w = st.slider("Fit Score Weight", 0.0, 1.0, float(base_config["scoring"]["fit_weight"]), 0.05)
-    avail_w = st.slider("Availability Score Weight", 0.0, 1.0, float(base_config["scoring"]["availability_weight"]), 0.05)
-    trust_w = st.slider("Trust Score Weight", 0.0, 1.0, float(base_config["scoring"]["trust_weight"]), 0.05)
-    growth_w = st.slider("Growth Score Weight", 0.0, 1.0, float(base_config["scoring"]["growth_weight"]), 0.05)
+    fit_w = st.slider(
+        "Semantic Fit Weight", 
+        0.0, 1.0, float(base_config["scoring"]["fit_weight"]), 0.05,
+        help="Semantic match between candidate experience and job description scorecard"
+    )
+    avail_w = st.slider(
+        "Availability Weight", 
+        0.0, 1.0, float(base_config["scoring"]["availability_weight"]), 0.05,
+        help="Active seeking status, notice period, and recency of activity"
+    )
+    trust_w = st.slider(
+        "Trust Weight", 
+        0.0, 1.0, float(base_config["scoring"]["trust_weight"]), 0.05,
+        help="Profile consistency checks and defense against keyword stuffing / honeypots"
+    )
+    growth_w = st.slider(
+        "Growth Weight", 
+        0.0, 1.0, float(base_config["scoring"]["growth_weight"]), 0.05,
+        help="Career trajectory, velocity of promotion, and leadership progression"
+    )
     
     # Normalize weights if they do not sum to 1.0
     total_w = fit_w + avail_w + trust_w + growth_w
@@ -114,8 +144,8 @@ with st.sidebar:
         "growth_weight": growth_w
     }
 
-st.markdown('<div class="main-header">IntentRank Evaluation Sandbox</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Evaluate, audit, and debug the candidate ranking engine against recruiter requirements.</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">IntentRank</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-subheader">AI Recruiting Intelligence & Candidate Ranking Platform</div>', unsafe_allow_html=True)
 
 # Tabs
 tab_ranker, tab_scorecard, tab_methodology = st.tabs(["🧠 Candidate Ranker", "📋 Job Scorecard", "🔬 Methodology & Diagnostics"])
@@ -125,24 +155,30 @@ default_jd_path = Path("dataset/job_description.docx")
 default_scorecard_path = Path("config/jd_scorecard.yaml")
 default_candidates_path = Path("dataset/sample_candidates.json")
 
+# Initialize session state for ranked results
+if "ranked_results" not in st.session_state:
+    st.session_state.ranked_results = []
+if "df" not in st.session_state:
+    st.session_state.df = pd.DataFrame()
+
 # Core Data loading
 with tab_ranker:
     col1, col2 = st.columns([1, 2])
     
     with col1:
-        st.markdown("### 📥 Input files")
+        st.markdown("### 📥 Input Files")
         
         # Candidates File
         cand_source = st.radio("Candidate Pool Source", ["Use Sample Candidates (50 profiles)", "Upload Custom JSONL Pool"])
         uploaded_candidates = None
         if cand_source == "Upload Custom JSONL Pool":
-            uploaded_candidates = st.file_uploader("Upload candidates.jsonl", type=["jsonl", "json"])
+            uploaded_candidates = st.file_uploader("Upload Candidate JSONL Pool", type=["jsonl", "json"], help="Accepts .jsonl or .json candidate archives.")
             
         # Job Description File
-        jd_source = st.radio("Job Description Source", ["Use Default Senior AI Engineer JD", "Upload Custom Job Description (.docx, .txt, .md)"])
+        jd_source = st.radio("Job Description Source", ["Use Default Senior AI Engineer JD", "Upload Custom Job Description"])
         uploaded_jd = None
-        if jd_source == "Upload Custom Job Description (.docx, .txt, .md)":
-            uploaded_jd = st.file_uploader("Upload JD file", type=["docx", "txt", "md"])
+        if jd_source == "Upload Custom Job Description":
+            uploaded_jd = st.file_uploader("Upload Job Description (.docx, .txt, .md)", type=["docx", "txt", "md"], help="Accepts Word documents, Text, or Markdown.")
             
         # Load candidate records
         raw_records = []
@@ -177,107 +213,196 @@ with tab_ranker:
         st.markdown("### 📊 Live Ranked Output")
         
         if run_ranking and len(raw_records) > 0:
-            with st.spinner("Analyzing candidate profiles and checking signals..."):
-                try:
-                    # Parse Scorecard & Score Candidates
-                    scorecard = load_job_scorecard(active_jd_path, default_scorecard_path)
-                    candidates = [normalize_candidate(rec) for rec in raw_records]
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            status_text.text("Parsing job requirements scorecard...")
+            scorecard = load_job_scorecard(active_jd_path, default_scorecard_path)
+            progress_bar.progress(15)
+            
+            status_text.text("Normalizing candidate profiles...")
+            candidates = [normalize_candidate(rec) for rec in raw_records]
+            progress_bar.progress(35)
+            
+            status_text.text("Running Multi-Score evaluator...")
+            ranked_results = []
+            total_cands = len(candidates)
+            for idx, candidate in enumerate(candidates):
+                fit_score, fit_strengths, fit_penalties, fit_details = score_fit(candidate, scorecard)
+                availability_score, availability_strengths = score_availability(
+                    candidate,
+                    stale_days=int(custom_weights["availability"]["stale_days"]),
+                    ideal_notice_days=int(custom_weights["availability"]["ideal_notice_days"]),
+                    acceptable_notice_days=int(custom_weights["availability"]["acceptable_notice_days"]),
+                )
+                trust_score, trust_penalties = score_trust(candidate, scorecard, custom_weights["trust"])
+                growth_score, growth_strengths = score_growth(candidate, custom_weights["growth"])
+                extra_penalty, extra_reasons = honeypot_penalties(candidate)
+                trust_score = max(0.0, trust_score - extra_penalty)
+                
+                all_penalties = fit_penalties + trust_penalties + extra_reasons
+                main_concern = determine_main_concern(candidate, all_penalties, fit_details)
+                
+                score_bundle = blend_scores(
+                    candidate_id=candidate.candidate_id,
+                    retrieval_score=1.0,
+                    fit_score=fit_score,
+                    availability_score=availability_score,
+                    trust_score=trust_score,
+                    growth_score=growth_score,
+                    fit_details=fit_details,
+                    weights=custom_weights,
+                    penalties=all_penalties,
+                    strengths=fit_strengths + availability_strengths + growth_strengths,
+                    main_concern=main_concern
+                )
+                ranked_results.append((candidate, score_bundle))
+                
+                # Update progress incrementally
+                pct = 35 + int((idx / total_cands) * 50)
+                progress_bar.progress(pct)
+                
+            status_text.text("Sorting top candidates...")
+            ranked_results.sort(
+                key=lambda item: (
+                    -item[1].final_score,
+                    -item[1].fit_score,
+                    -item[1].trust_score,
+                    item[0].candidate_id,
+                )
+            )
+            progress_bar.progress(95)
+            
+            # Build dataframe for top 100
+            rows = []
+            for rank_idx, (cand, scores) in enumerate(ranked_results[:100], start=1):
+                rows.append({
+                    "Rank": rank_idx,
+                    "Candidate ID": cand.candidate_id,
+                    "Title": cand.current_title,
+                    "Company": cand.current_company,
+                    "Overall Score": round(scores.final_score, 2),
+                    "Semantic Fit": round(scores.fit_score, 1),
+                    "Availability": round(scores.availability_score, 1),
+                    "Trust Score": round(scores.trust_score, 1),
+                    "Growth Score": round(scores.growth_score, 1),
+                    "Career Depth": round(scores.career_depth_score, 1),
+                    "Concern": scores.main_concern if scores.main_concern else "None",
+                    "Reasoning": generate_reasoning(cand, scores)
+                })
+                
+            df = pd.DataFrame(rows)
+            st.session_state.ranked_results = ranked_results
+            st.session_state.df = df
+            
+            progress_bar.progress(100)
+            status_text.empty()
+            progress_bar.empty()
+            
+        # Display results if available in session state
+        if not st.session_state.df.empty:
+            df = st.session_state.df
+            ranked_results = st.session_state.ranked_results
+            
+            st.success(f"Successfully ranked {len(ranked_results)} candidates!")
+            
+            # Metrics overview
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Top Ranked Profile", df["Title"].iloc[0])
+            m2.metric("Avg Score (Top 10)", f"{df['Overall Score'].head(10).mean():.2f}")
+            m3.metric("Clean Candidate Rate", f"{(df['Concern'] == 'None').mean() * 100:.1f}%")
+            
+            # Display Table
+            st.dataframe(
+                df,
+                use_container_width=True,
+                column_config={
+                    "Overall Score": st.column_config.NumberColumn(format="%.2f"),
+                    "Semantic Fit": st.column_config.NumberColumn(format="%.1f"),
+                    "Availability": st.column_config.NumberColumn(format="%.1f"),
+                    "Trust Score": st.column_config.NumberColumn(format="%.1f"),
+                    "Growth Score": st.column_config.NumberColumn(format="%.1f"),
+                    "Career Depth": st.column_config.NumberColumn(format="%.1f"),
+                }
+            )
+            
+            # Download CSV
+            csv_data = df[["Candidate ID", "Rank", "Overall Score", "Reasoning"]].to_csv(index=False)
+            st.download_button(
+                label="📥 Download Ranked Submission CSV",
+                data=csv_data,
+                file_name="sandbox_submission.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+            
+            # Candidate Inspector
+            st.markdown("---")
+            st.markdown("### 🔍 Recruiter Candidate Audit Inspector")
+            st.markdown("Select any candidate from the ranked list to audit their full profile, score breakdown, and explanation.")
+            
+            selected_id = st.selectbox("Select Candidate ID:", df["Candidate ID"].tolist())
+            
+            # Find candidate
+            cand_match = [item for item in ranked_results if item[0].candidate_id == selected_id]
+            if cand_match:
+                cand, scores = cand_match[0]
+                
+                col_det1, col_det2, col_det3 = st.columns([1.2, 1.2, 1.6])
+                
+                with col_det1:
+                    st.markdown(f"#### 👤 {cand.candidate_id} Profile Summary")
+                    st.markdown(f"**Current Title:** `{cand.current_title}`")
+                    st.markdown(f"**Current Company:** `{cand.current_company}`")
+                    st.markdown(f"**Current Industry:** `{cand.current_industry}`")
+                    st.markdown(f"**Location:** `{cand.current_location}`")
+                    st.markdown(f"**Years of Exp (History):** `{cand.years_experience:.1f} years`")
                     
-                    # Manual pipeline run with custom weights
-                    ranked_results = []
-                    for candidate in candidates:
-                        fit_score, fit_strengths, fit_penalties, fit_details = score_fit(candidate, scorecard)
-                        availability_score, availability_strengths = score_availability(
-                            candidate,
-                            stale_days=int(custom_weights["availability"]["stale_days"]),
-                            ideal_notice_days=int(custom_weights["availability"]["ideal_notice_days"]),
-                            acceptable_notice_days=int(custom_weights["availability"]["acceptable_notice_days"]),
-                        )
-                        trust_score, trust_penalties = score_trust(candidate, scorecard, custom_weights["trust"])
-                        growth_score, growth_strengths = score_growth(candidate, custom_weights["growth"])
-                        extra_penalty, extra_reasons = honeypot_penalties(candidate)
-                        trust_score = max(0.0, trust_score - extra_penalty)
+                    st.markdown("**Top Skills:**")
+                    skills_to_show = cand.skills[:10]
+                    st.write(", ".join(skills_to_show))
+                    
+                with col_det2:
+                    st.markdown("#### 📊 Score Breakdown")
+                    
+                    # Display horizontal bars for each score
+                    def score_progress(label, val):
+                        st.markdown(f"**{label}**: {val:.1f}%")
+                        st.progress(min(1.0, max(0.0, val / 100.0)))
                         
-                        all_penalties = fit_penalties + trust_penalties + extra_reasons
-                        main_concern = determine_main_concern(candidate, all_penalties, fit_details)
+                    score_progress("Overall Score", scores.final_score)
+                    score_progress("Semantic Fit", scores.fit_score)
+                    score_progress("Availability", scores.availability_score)
+                    score_progress("Trust Score", scores.trust_score)
+                    score_progress("Growth Score", scores.growth_score)
+                    score_progress("Career Depth", scores.career_depth_score * (100.0 / 12.0))
+                    
+                with col_det3:
+                    st.markdown("#### 💬 Recruiter Assessment")
+                    
+                    # Concern Status
+                    if scores.main_concern:
+                        st.markdown(f"⚠️ **Main Concern:** <span class='concern-badge'>{scores.main_concern}</span>", unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"✅ **Main Concern:** <span class='clean-badge'>No Concerns Found</span>", unsafe_allow_html=True)
                         
-                        score_bundle = blend_scores(
-                            candidate_id=candidate.candidate_id,
-                            retrieval_score=1.0,
-                            fit_score=fit_score,
-                            availability_score=availability_score,
-                            trust_score=trust_score,
-                            growth_score=growth_score,
-                            fit_details=fit_details,
-                            weights=custom_weights,
-                            penalties=all_penalties,
-                            strengths=fit_strengths + availability_strengths + growth_strengths,
-                            main_concern=main_concern
-                        )
-                        ranked_results.append((candidate, score_bundle))
+                    st.markdown(f"**Factual Reasoning:**\n> *\"{generate_reasoning(cand, scores)}\"*")
+                    
+                    st.markdown("**Strengths Detected:**")
+                    if scores.strengths:
+                        for strength in scores.strengths[:4]:
+                            st.markdown(f"- ✅ {strength}")
+                    else:
+                        st.markdown("- None recorded")
                         
-                    # Sort
-                    ranked_results.sort(
-                        key=lambda item: (
-                            -item[1].final_score,
-                            -item[1].fit_score,
-                            -item[1].trust_score,
-                            item[0].candidate_id,
-                        )
-                    )
-                    
-                    # Build dataframe for top 100
-                    rows = []
-                    for idx, (cand, scores) in enumerate(ranked_results[:100], start=1):
-                        rows.append({
-                            "Rank": idx,
-                            "Candidate ID": cand.candidate_id,
-                            "Title": cand.current_title,
-                            "Company": cand.current_company,
-                            "Fit": round(scores.fit_score, 1),
-                            "Avail": round(scores.availability_score, 1),
-                            "Trust": round(scores.trust_score, 1),
-                            "Growth": round(scores.growth_score, 1),
-                            "Final": round(scores.final_score, 2),
-                            "Concern": scores.main_concern if scores.main_concern else "None",
-                            "Reasoning": generate_reasoning(cand, scores)
-                        })
-                        
-                    df = pd.DataFrame(rows)
-                    st.success(f"Successfully ranked {len(candidates)} candidates!")
-                    
-                    # Metrics overview
-                    m1, m2, m3 = st.columns(3)
-                    m1.metric("Top Candidate Fit", df["Title"].iloc[0] if not df.empty else "N/A")
-                    m2.metric("Avg Final Score (Top 10)", f"{df['Final'].head(10).mean():.2f}" if not df.empty else "0.0")
-                    m3.metric("Clean Candidate Rate", f"{(df['Concern'] == 'None').mean() * 100:.1f}%" if "Concern" in df else "0.0%")
-                    
-                    # Display Table
-                    st.dataframe(
-                        df,
-                        use_container_width=True,
-                        column_config={
-                            "Final": st.column_config.NumberColumn(format="%.2f"),
-                            "Concern": st.column_config.TextColumn(help="Recruiter concern warning"),
-                        }
-                    )
-                    
-                    # Download CSV
-                    csv_data = df[["Candidate ID", "Rank", "Final", "Reasoning"]].to_csv(index=False)
-                    st.download_button(
-                        label="📥 Download Ranked Submission CSV",
-                        data=csv_data,
-                        file_name="sandbox_submission.csv",
-                        mime="text/csv",
-                        use_container_width=True
-                    )
-                    
-                except Exception as e:
-                    st.error(f"Execution Error: {e}")
-                    import traceback
-                    st.code(traceback.format_exc())
+                    st.markdown("**Risk/Penalty Flags:**")
+                    if scores.penalties:
+                        for penalty in scores.penalties[:3]:
+                            st.markdown(f"- ❌ {penalty}")
+                    else:
+                        st.markdown("- None recorded")
         else:
-            st.info("Upload files or use defaults, then click 'Run IntentRank Engine' to see rankings.")
+            st.info("👈 Upload candidate JSONL and Job Description, then click 'Run IntentRank Engine' to begin ranking.")
 
 # JD Scorecard Overview
 with tab_scorecard:
@@ -332,3 +457,10 @@ with tab_methodology:
     * **Honeypot Shield:** Catches profiles with impossible credentials (e.g. 5+ expert skills with <12 months of total project duration) or title-skill mismatches.
     * **Relational Experience Calculator:** Reconstructs total working experience from distinct career history blocks rather than trusting noisy profile years fields.
     """)
+
+# Footer
+st.markdown("""
+<div class="footer">
+    Built for the Redrob AI Recruiting Challenge & Hackathon | <a href="https://github.com/Arshdeep030/TalentRank-AI" target="_blank">GitHub Repository</a> | Version 1.0.0
+</div>
+""", unsafe_allow_html=True)
