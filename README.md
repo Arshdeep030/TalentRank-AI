@@ -1,8 +1,5 @@
 # IntentRank — Recruiter-Aware Candidate Discovery Engine
 
-[![Python Version](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Hackathon](https://img.shields.io/badge/Challenge-Redrob%20Candidate%20Ranking-purple.svg)](https://redrob.com/)
 
 **IntentRank** is a candidate evaluation and ranking engine built for the Redrob Intelligent Candidate Discovery & Ranking Challenge. 
 
@@ -10,7 +7,7 @@ Unlike conventional keyword-matching tools that are easily fooled by resume infl
 
 ---
 
-## 🎯 The Problem & Dataset Challenges
+##  The Problem & Dataset Challenges
 
 ### The Problem: Beyond Keyword Matching
 In high-volume recruitment (evaluating 100,000+ candidates), simple keyword matching is highly vulnerable to resume inflation, spam, and semantic mismatch. The Redrob Intelligent Candidate Discovery challenge requires ranking candidates against a senior AI/search engineering description where standard filters fail.
@@ -24,7 +21,7 @@ IntentRank addresses several key dataset constraints designed to trick generic a
 
 ---
 
-## 🏗️ System Architecture
+##  System Architecture
 
 IntentRank is structured as a decoupled, CPU-friendly pipeline designed to run efficiently on 100K+ candidate profiles within runtime constraints:
 
@@ -80,7 +77,7 @@ graph TD
 
 ---
 
-## 🧠 Key Features & Ranking Heuristics
+## Key Features & Ranking Heuristics
 
 ### 1. Candidate Intelligence Layer
 Normalizes raw unstructured JSON profiles into high-fidelity structured data, exposing work history durations, exact notice periods, locations, and recruiter response rates.
@@ -100,7 +97,7 @@ Instead of a single score, candidates are evaluated across four key dimensions:
 
 ---
 
-## 🛡️ Honeypot Protection
+##  Honeypot Protection
 
 The Redrob challenge dataset contains deceptive profiles and keyword-stuffed entries. IntentRank uses a multi-layered defense to penalize them:
 1. **Title-Skill Mismatch:** Flags non-technical roles (e.g., Sales, Marketing) claiming advanced ML skills like `PEFT`, `LoRA`, or `Information Retrieval`.
@@ -109,7 +106,7 @@ The Redrob challenge dataset contains deceptive profiles and keyword-stuffed ent
 
 ---
 
-## 📊 Score Calibration & Optimization
+## Score Calibration & Optimization
 
 ### Solving Score Saturation
 Earlier iterations suffered from "score saturation," where the top candidates all clustered at a perfect `100.0` fit score. We introduced subscore caps, late-saturating metrics, and specialized penalties to ensure candidates are highly differentiated. 
@@ -136,7 +133,7 @@ To measure the impact of each subsystem, we systematically disabled individual c
 
 ---
 
-## 📚 Detailed Scoring Methodology
+##  Detailed Scoring Methodology
 
 IntentRank computes candidate scores by looking beyond simple resume keywords and structuring evaluation into four core subsystems, which are then combined using our optimized weights:
 
@@ -169,7 +166,7 @@ Measures the likelihood of successful placement:
 
 ---
 
-## 🔍 Example Candidate Walkthrough: CAND_0081846 (Rank #1)
+##  Example Candidate Walkthrough: CAND_0081846 (Rank #1)
 
 To demonstrate how the scoring system functions in practice, let's look at the top-ranked candidate:
 
@@ -195,7 +192,7 @@ To demonstrate how the scoring system functions in practice, let's look at the t
 
 
 
-## 📁 Repository Structure
+##  Repository Structure
 
 ```text
 ├── rank.py                       # Main pipeline CLI entrypoint
@@ -223,7 +220,7 @@ To demonstrate how the scoring system functions in practice, let's look at the t
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### 1. Setup
 Create a virtual environment and install dependencies:
