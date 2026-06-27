@@ -222,12 +222,19 @@ with tab_ranker:
             
             status_text.text("Normalizing candidate profiles...")
             candidates = [normalize_candidate(rec) for rec in raw_records]
+            progress_bar.progress(25)
+            
+            status_text.text("Retrieving top candidate shortlist...")
+            from src.retrieval import retrieve_top_candidates
+            # Cap shortlist at 500 for fast dashboard performance if pool is large
+            shortlist_size = min(500, int(custom_weights["retrieval"]["shortlist_size"]))
+            retrieved = retrieve_top_candidates(candidates, scorecard, shortlist_size)
             progress_bar.progress(35)
             
             status_text.text("Running Multi-Score evaluator...")
             ranked_results = []
-            total_cands = len(candidates)
-            for idx, candidate in enumerate(candidates):
+            total_cands = len(retrieved)
+            for idx, (candidate, retrieval_score) in enumerate(retrieved):
                 fit_score, fit_strengths, fit_penalties, fit_details = score_fit(candidate, scorecard)
                 availability_score, availability_strengths = score_availability(
                     candidate,
@@ -245,7 +252,7 @@ with tab_ranker:
                 
                 score_bundle = blend_scores(
                     candidate_id=candidate.candidate_id,
-                    retrieval_score=1.0,
+                    retrieval_score=retrieval_score,
                     fit_score=fit_score,
                     availability_score=availability_score,
                     trust_score=trust_score,
@@ -263,6 +270,7 @@ with tab_ranker:
                 progress_bar.progress(pct)
                 
             status_text.text("Sorting top candidates...")
+
             ranked_results.sort(
                 key=lambda item: (
                     -item[1].final_score,
