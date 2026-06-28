@@ -1,5 +1,6 @@
 # IntentRank — Recruiter-Aware Candidate Discovery Engine
 
+DEMO: https://talentrank-ai-hukcazhcvxjpocq8rbehax.streamlit.app/
 
 **IntentRank** is a candidate evaluation and ranking engine built for the Redrob Intelligent Candidate Discovery & Ranking Challenge. 
 
